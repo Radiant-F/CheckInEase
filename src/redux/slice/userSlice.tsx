@@ -1,5 +1,10 @@
 import {createSlice} from '@reduxjs/toolkit';
 
+interface UserState {
+  token: string;
+  user_data: object;
+}
+
 const userSlice = createSlice({
   name: 'userSlice',
   initialState: {
@@ -7,7 +12,7 @@ const userSlice = createSlice({
     user_data: {
       name: '',
     },
-  },
+  } as UserState,
   reducers: {
     setToken(state, action) {
       state.token = action.payload;

@@ -4,9 +4,10 @@ import {
   View,
   Alert,
   TouchableNativeFeedback,
+  StatusBar,
 } from 'react-native';
 import React from 'react';
-import {Background, Gap, Presence} from '../components';
+import {Background, Gap, Presence, UserHeader} from '../components';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
@@ -41,25 +42,14 @@ export default function Home({navigation}: any) {
         <Gap width={20} />
         <Text style={styles.textHeaderTitle}>CheckInEase</Text>
       </View>
-      <View style={{padding: 20}}>
-        <Text style={{color: 'black', fontStyle: 'italic'}}>
-          Selamat datang,
-        </Text>
-        <Gap height={10} />
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Icon name="account-circle" color={'black'} size={60} />
-          <Gap width={5} />
-          <View>
-            <Text style={styles.textUsername}>Nama User</Text>
-            <Gap height={2.5} />
-            <Text style={{color: 'grey', fontStyle: 'italic'}}>
-              contoh@email.com
-            </Text>
-          </View>
-        </View>
-      </View>
+
+      <UserHeader />
+
       <Presence />
-      <TouchableNativeFeedback useForeground>
+
+      <TouchableNativeFeedback
+        useForeground
+        onPress={() => navigation.navigate('PresenceScanner')}>
         <View style={styles.btnScanQR}>
           <Icon name="qrcode-scan" color={'white'} size={30} />
         </View>
@@ -82,16 +72,12 @@ const styles = StyleSheet.create({
     bottom: 25,
     right: 25,
   },
-  textUsername: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: 'black',
-  },
   viewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 50,
     paddingHorizontal: 20,
+    paddingTop: StatusBar.currentHeight,
   },
   textHeaderTitle: {
     color: 'black',

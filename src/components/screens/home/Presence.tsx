@@ -1,16 +1,17 @@
 import {
-  FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableNativeFeedback,
   View,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useState, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ModalMonthSelector from './ModalMonthSelector';
+import {useFocusEffect} from '@react-navigation/native';
 
 export default function Presence() {
   const {token} = useSelector(state => state.user);
@@ -19,7 +20,7 @@ export default function Presence() {
   const [modalMonthVisible, setModalMonthVisible] = useState(false);
   const closeModalMonth = () => setModalMonthVisible(false);
   const openModalMonth = () => setModalMonthVisible(true);
-  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const months = [
     'Januari',
     'Februari',
@@ -35,7 +36,9 @@ export default function Presence() {
     'Desember',
   ];
 
+  const [loading, setLoading] = useState(false);
   async function getPresence() {
+    setLoading(true);
     try {
       const {data} = await axios.get(
         'https://dev.pondokdigital.pondokqu.id/api/get-data-user-in-year',
@@ -47,21 +50,34 @@ export default function Presence() {
         },
       );
       setPresence(data);
+      setLoading(false);
     } catch (error) {
       console.log(error);
+      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    getPresence();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      getPresence();
+    }, []),
+  );
+
+  function navigateMonth(type: 'next' | 'prev') {
+    const current = new Date().getMonth(),
+      canNext = selectedMonth != current,
+      canPrev = selectedMonth != 0;
+    if (type == 'next' && canNext) setSelectedMonth(selectedMonth + 1);
+    else if (type == 'prev' && canPrev) setSelectedMonth(selectedMonth - 1);
+    else return;
+  }
 
   return (
     <View style={{flex: 1}}>
       <View style={styles.viewMonthNavigator}>
         <TouchableNativeFeedback
           useForeground
-          onPress={() => setSelectedMonth(selectedMonth - 1)}>
+          onPress={() => navigateMonth('prev')}>
           <View style={styles.btnMonthNavigator}>
             <Icon name="chevron-left" color={'black'} size={30} />
           </View>
@@ -75,7 +91,7 @@ export default function Presence() {
         </TouchableNativeFeedback>
         <TouchableNativeFeedback
           useForeground
-          onPress={() => setSelectedMonth(selectedMonth + 1)}>
+          onPress={() => navigateMonth('next')}>
           <View style={styles.btnMonthNavigator}>
             <Icon name="chevron-right" color={'black'} size={30} />
           </View>
@@ -86,13 +102,24 @@ export default function Presence() {
           </View>
         </TouchableNativeFeedback>
       </View>
+
       <View style={{height: 20}} />
-      <ScrollView contentContainerStyle={styles.containerPresence}>
+
+      <ScrollView
+        contentContainerStyle={styles.containerPresence}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={getPresence} />
+        }>
         {presence?.[months[selectedMonth]].map((item, index) => {
+          const isIn = item.in != ' ' || item.in != null;
+          const bgColor =
+            item.statusPresence == 'Alpha' ? 'black' : 'dodgerblue';
           return (
-            <View style={styles.viewPresence} key={index}>
+            <View
+              style={{...styles.viewPresence, backgroundColor: bgColor}}
+              key={index}>
               <Text style={styles.textDateIndex}>{index + 1}</Text>
-              {item.out != ' ' && (
+              {item.isReturn && (
                 <Icon
                   name="bookmark-check-outline"
                   color={'white'}
@@ -103,7 +130,9 @@ export default function Presence() {
               <Text style={{color: 'white', textAlign: 'center'}}>
                 {item.statusPresence}
               </Text>
-              {item.in != ' ' && <Text style={styles.textClockIn}>08:00</Text>}
+              {isIn && (
+                <Text style={styles.textClockIn}>{item.in?.slice(0, 5)}</Text>
+              )}
             </View>
           );
         })}
@@ -136,7 +165,8 @@ const styles = StyleSheet.create({
     right: 5,
   },
   textDateIndex: {
-    color: 'grey',
+    color: 'white',
+    opacity: 0.75,
     position: 'absolute',
     top: 4,
     left: 5,
@@ -194,7 +224,6 @@ const styles = StyleSheet.create({
   viewPresence: {
     width: 65,
     height: 65,
-    backgroundColor: 'black',
     margin: 10,
     borderRadius: 5,
     elevation: 3,
